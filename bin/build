@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""
+This script builds a zipapp with dependencies installed.
+"""
+import argparse
+import pathlib
+import subprocess
+import sys
+import tempfile
+from typing import Union, cast
+
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+
+
+def run(*args: Union[str, pathlib.Path]) -> None:
+    subprocess.run(args, capture_output=True, check=True)
+
+
+def main() -> None:
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=pathlib.Path,  # type: ignore
+        default=PROJECT_ROOT / "bin" / "notifier",
+        help="Where to write the resulting zipapp",
+        metavar="<path>",
+    )
+
+    args = parser.parse_args()
+
+    with tempfile.TemporaryDirectory() as _dir:
+
+        build_dir = pathlib.Path(_dir)
+        requirements = build_dir / "requirements.txt"
+
+        print("Generating requirements.txt")
+        run("poetry", "export", "-f", "requirements.txt", "-o", requirements)
+
+        print("Installing dependencies")
+        run(
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            requirements,
+            "--no-deps",
+            "--no-binary",
+            ":all:",
+            "-t",
+            build_dir,
+        )
+
+        print("Building sdist")
+        run("poetry", "build", "-f", "sdist")
+
+        print("Installing project")
+        run(
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--no-deps",
+            "--no-index",
+            "--no-cache-dir",
+            "--no-use-pep517",
+            "--no-binary",
+            ":all:",
+            "-t",
+            build_dir,
+            "--find-links",
+            pathlib.Path(".") / "dist",
+            "slack-notifier",
+        )
+
+        print("Creating zip app")
+        run(
+            sys.executable,
+            "-m",
+            "zipapp",
+            "--output",
+            cast(pathlib.Path, args.output),
+            "--main",
+            "notifier:main",
+            "--compress",
+            build_dir,
+            "-p",
+            "python3",
+        )
+
+        print("Removing dist dir")
+        run("rm", "-rf", pathlib.Path(".") / "dist")
+
+        print("Done ✅")
+
+
+if __name__ == "__main__":
+    main()
