@@ -9,12 +9,12 @@ This script is intended to be run as part of a Github Workflow. Here's an exampl
 workflow:
 
 ```yaml
-name: Build
+name: Slack status updater
 
 on: [push]
 
 jobs:
-  build:
+  post_slack_status:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Python
@@ -22,10 +22,10 @@ jobs:
         with:
           python-version: 3.8
       - name: Download executable
-        run: curl -sSL -o ./notifier "https://github.com/kolonialno/slack-notifier/releases/download/v1.0.0/notifier"
+        run: curl -sSL -o ./notifier.pyz "https://github.com/kolonialno/slack-notifier/releases/download/v1.0.0/notifier"
       - name: Run notifier
-        run: ./notifier --repo ${{github.repo}} --slack-channel #my-channel --commit ${{github.sha1}}
+        run: python ./notifier.pyz --repo ${{ github.repository }} --channel "#my-slack-channel" --commit ${{ github.sha }}
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          SLACK_TOKEN: ${{secrets.SLACK_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
 ```
