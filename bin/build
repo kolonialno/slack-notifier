@@ -75,6 +75,9 @@ def main() -> None:
             "slack-notifier",
         )
 
+        print("Remvoing .egg-info dirs")
+        run("rm", "-rf", *build_dir.glob("*.egg-info"))
+
         print("Creating zip app")
         run(
             sys.executable,

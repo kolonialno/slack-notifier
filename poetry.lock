@@ -65,6 +65,17 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "7.1.2"
 
 [[package]]
+category = "main"
+description = "Simple creation of data classes from dictionaries."
+name = "dacite"
+optional = false
+python-versions = ">=3.6"
+version = "1.5.1"
+
+[package.extras]
+dev = ["pytest (>=5)", "pytest-cov", "coveralls", "black", "mypy", "pylint"]
+
+[[package]]
 category = "dev"
 description = "the modular source code checker: pep8 pyflakes and co"
 name = "flake8"
@@ -291,7 +302,7 @@ python-versions = "*"
 version = "3.7.4.2"
 
 [metadata]
-content-hash = "7b19a82e9f3c7336ebad911080a4aafeed790a076b769c7701bb6a41fd15190f"
+content-hash = "cd3ef4b7c569c6185fbafc44eed206854faf9b024177e78301330f183f6dd4be"
 lock-version = "1.0"
 python-versions = "^3.8"
 
@@ -319,6 +330,10 @@ chardet = [
 click = [
     {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
+]
+dacite = [
+    {file = "dacite-1.5.1-py3-none-any.whl", hash = "sha256:f7f269647ede90f8702728eb7dcb972051511c81b853a93c962fbd31f1753b9f"},
+    {file = "dacite-1.5.1.tar.gz", hash = "sha256:764c96e0304cb189628686689a163a6a3a8ce7bf3465f0a2d882a8b42f88108f"},
 ]
 flake8 = [
     {file = "flake8-3.8.3-py2.py3-none-any.whl", hash = "sha256:15e351d19611c887e482fb960eae4d44845013cc142d42896e9862f775d8cf5c"},

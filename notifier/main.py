@@ -1,11 +1,11 @@
 import argparse
 import asyncio
 import os
-import pprint
 import sys
-from typing import List, Optional, cast
+from typing import List, cast
 
-from .github import get_commit, get_commit_checks, get_commit_statuses, is_valid_repo
+from .checker import status_updates
+from .github import is_valid_repo
 from .slack import post_message
 from .types import MessageAttachment
 from .utils import red
@@ -46,18 +46,13 @@ async def _main() -> None:
 
     # Optional arguments
     parser.add_argument(
-        "--message-ts",
-        help=(
-            "Optional timestamp of the message to update. "
-            "If this is specified --channel must be a channel id"
-        ),
-        metavar="<ts>",
-    )
-    parser.add_argument(
         "--timeout",
         type=int,
         default=30,
-        help="Maximum number of minutes to run before giving up",
+        help=(
+            "Maximum number of minutes to run before giving up, "
+            "defaults to 30 minutes"
+        ),
         metavar="<minutes>",
     )
 
@@ -65,9 +60,8 @@ async def _main() -> None:
 
     commit = cast(str, args.commit)
     channel = cast(str, args.channel)
-    message_ts = cast(Optional[str], args.message_ts)
     repo = cast(str, args.repo)
-    timeout = cast(int, args.timeout)
+    timeout = cast(int, args.timeout) * 60
 
     if "SLACK_TOKEN" not in os.environ:
         sys.exit(red("Please set the $SLACK_TOKEN environment variable"))
@@ -75,58 +69,59 @@ async def _main() -> None:
     if "GITHUB_TOKEN" not in os.environ:
         sys.exit(red("Please set the $GITHUB_TOKEN environment variable"))
 
-    response = await get_commit(repo=repo, ref=commit)
-    commit_data = response.json()  # type: ignore
+    message_ts = None
+    async for status in status_updates(repo=repo, commit=commit, timeout=timeout):
 
-    commit_url: str = commit_data["html_url"]  # type: ignore
-    commit_message: str = commit_data["commit"]["message"]  # type: ignore
-    author_image: str = commit_data["author"]["avatar_url"]  # type: ignore
-    author_username: str = commit_data["author"]["login"]  # type: ignore
+        attachments: List[MessageAttachment] = [
+            {"text": f"❌ *{check.name}*: {check.summary}", "color": "danger"}
+            for check in status.checks
+            if check.finished and not check.success
+        ]
 
-    response = await get_commit_statuses(repo=repo, ref=commit)
-    pprint.pprint(response.json())  # type: ignore
-    print("")
-    print("-" * 80)
-    print("")
+        is_finished = all(check.finished for check in status.checks)
+        is_success = all(check.success for check in status.checks)
 
-    response = await get_commit_checks(repo=repo, ref=commit)
-    pprint.pprint(response.json())  # type: ignore
-    print("")
-    print("-" * 80)
-    print("")
+        num_checks = len(status.checks)
+        num_successful_checks = sum(1 for check in status.checks if check.success)
 
-    pending_statues: List[MessageAttachment] = [
-        {"text": "❌ *flake8*", "color": "danger"},
-        {
-            "text": "⏳ *Some checks are pending*",
-            "color": "warning",
-            "footer": "1/14 checks have succeeded",
-        },
-    ]
+        summary: MessageAttachment
+        commit_color = None
+        if is_finished:
+            commit_color = "good" if is_success else "danger"
+            summary = {
+                "text": (
+                    "✅ *All checks passed*" if is_success else "⚠️ *Some checks failed*"
+                ),
+                "color": "good" if is_success else "danger",
+                "footer": f"{num_successful_checks}/{num_checks} checks have succeeded",
+            }
+        else:
+            summary = {
+                "text": "⏳ *Some checks are pending*",
+                "color": "warning",
+                "footer": f"{num_successful_checks}/{num_checks} checks have succeeded",
+            }
 
-    success_statues: List[MessageAttachment] = [
-        {
-            "text": "✅ *All checks passed*",
-            "color": "good",
-            "footer": "14/14 checks have succeeded",
-        },
-    ]
+        response = await post_message(
+            channel=channel,
+            ts=message_ts,
+            icon_emoji=":package:",
+            attachments=[
+                {
+                    "text": status.message,
+                    "author_name": status.author.login,
+                    "author_icon": status.author.avatar_url,
+                    "footer": f"Commit: <{status.url}|`{status.sha[:7]}`>",
+                    "color": commit_color,  # type: ignore
+                },
+                *attachments,
+                summary,
+            ],
+        )
 
-    response = await post_message(
-        channel=channel,
-        ts=message_ts,
-        icon_emoji=":package:",
-        attachments=[
-            {
-                "text": commit_message,
-                "author_name": author_username,
-                "author_icon": author_image,
-                "footer": f"Commit: <{commit_url}|`{commit[:7]}`>",
-            },
-            *pending_statues,
-        ],
-    )
-    pprint.pprint(response.json())  # type: ignore
+        data = response.json()
+        message_ts = data["ts"]
+        channel = data["channel"]
 
 
 def main() -> None:
@@ -135,3 +130,20 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+#    pending_statues: List[MessageAttachment] = [
+#        {"text": "❌ *flake8*", "color": "danger"},
+#        {
+#            "text": "⏳ *Some checks are pending*",
+#            "color": "warning",
+#            "footer": "1/14 checks have succeeded",
+#        },
+#    ]
+#
+#    success_statues: List[MessageAttachment] = [
+#        {
+#            "text": "✅ *All checks passed*",
+#            "color": "good",
+#            "footer": "14/14 checks have succeeded",
+#        },
+#    ]

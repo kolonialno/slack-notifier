@@ -2,3 +2,4 @@
 .venv
 *.pyc
 bin/notifier
+*.egg-info
