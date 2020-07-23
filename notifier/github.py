@@ -90,9 +90,7 @@ class GithubClient:
 
         # If we are currently in a Github check run, we need to ignore that
         # check run or we will never finish.
-        ignored_check_run_id = None
-        if (check_run_id := os.environ.get("GITHUB_RUN_ID", None)) is not None:
-            ignored_check_run_id = int(check_run_id)
+        ignored_check_run = os.environ.get("GITHUB_JOB", None)
 
         # Transform the fetched data into a useful object
         checks = tuple(
@@ -105,7 +103,7 @@ class GithubClient:
             for check_run in sorted(
                 check_runs_data.check_runs, key=lambda check_run: check_run.id
             )
-            if check_run.id != ignored_check_run_id
+            if check_run.name != ignored_check_run
         ) + tuple(
             CheckStatus(
                 name=status.context,
