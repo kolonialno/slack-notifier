@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: 3.8
       - name: Download executable
-        run: curl -sSL -o ./notifier.pyz "https://github.com/kolonialno/slack-notifier/releases/download/v1.0.0/notifier"
+        run: curl -sSL -o ./notifier.pyz "https://github.com/kolonialno/slack-notifier/releases/download/v1.0.1/notifier.pyz"
       - name: Run notifier
         run: python ./notifier.pyz --repo ${{ github.repository }} --channel "#my-slack-channel" --commit ${{ github.sha }}
         env:
