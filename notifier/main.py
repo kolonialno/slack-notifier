@@ -156,14 +156,15 @@ async def _main() -> None:
             ):
                 if attempt == notify_retries:
                     logger.error(
-                        "%s attempt failed. Unable to post message to slack channel",
+                        "%s attempts timed out. Unable to post message to slack channel",
                         attempt,
                     )
                     raise
 
                 sleep_duration = 0.5 * attempt
                 logger.error(
-                    "Unable to post message to slack channel (attempt %s), retrying in %s seconds",
+                    "Timed out while trying to post message to slack channel (attempt %s). "
+                    "Retrying in %s seconds",
                     attempt,
                     sleep_duration,
                 )
