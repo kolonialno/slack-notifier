@@ -29,3 +29,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
 ```
+
+## Creating a new release
+
+ 1. Update the example above to use the new version and commit
+ 2. Create a new tag, e.g. `git tag v1.2.3`
+ 3. Push commit with tags, the workflows will do the rest: `git push origin --tags`
