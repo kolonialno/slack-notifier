@@ -5,7 +5,7 @@ import os
 import sys
 from typing import List, cast
 
-from httpcore import TimeoutException
+import httpx
 
 from .checker import status_updates
 from .github import is_valid_repo
@@ -128,7 +128,7 @@ async def _main() -> None:
         response = None
 
         # Attempt to post notification. If post fails retry provided number of times.
-        for attempt in range(notify_retries):
+        for attempt in range(1, notify_retries + 1):
             try:
                 response = await post_message(
                     channel=channel,
@@ -148,12 +148,26 @@ async def _main() -> None:
                     timeout=notify_timeout,
                 )
                 break
-            except TimeoutException:
-                if attempt + 1 >= notify_retries:
-                    logger.exception("Failed to notify slack channel")
+            except (
+                httpx.ConnectTimeout,
+                httpx.PoolTimeout,
+                httpx.ReadTimeout,
+                httpx.WriteTimeout,
+            ):
+                if attempt == notify_retries:
+                    logger.error(
+                        "%s attempt failed. Unable to post message to slack channel",
+                        attempt,
+                    )
                     raise
 
-                logger.error("Unable to post message to slack channel, retrying...")
+                sleep_duration = 0.5 * attempt
+                logger.error(
+                    "Unable to post message to slack channel (attempt %s), retrying in %s seconds",
+                    attempt,
+                    sleep_duration,
+                )
+                await asyncio.sleep(sleep_duration)
 
         data = response.json()
         message_ts = data["ts"]
