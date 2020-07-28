@@ -26,6 +26,7 @@ async def post_message(
     username: str = None,
     icon_emoji: str = None,
     icon_url: str = None,
+    timeout: float = 30.0,
 ) -> httpx.Response:
 
     path = "/api/chat.postMessage" if not ts else "/api/chat.update"
@@ -41,6 +42,6 @@ async def post_message(
     }
 
     async with httpx.AsyncClient(
-        auth=SlackAuth(token=os.environ["SLACK_TOKEN"])
+        auth=SlackAuth(token=os.environ["SLACK_TOKEN"]), timeout=timeout,
     ) as client:
         return await client.post(f"https://slack.com{path}", json=payload)

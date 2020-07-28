@@ -1,14 +1,19 @@
 import argparse
 import asyncio
+import logging
 import os
 import sys
 from typing import List, cast
+
+from httpcore import TimeoutException
 
 from .checker import status_updates
 from .github import is_valid_repo
 from .slack import post_message
 from .types import MessageAttachment
 from .utils import red
+
+logger = logging.getLogger(__name__)
 
 
 def _repo_type(value: str) -> str:
@@ -55,6 +60,22 @@ async def _main() -> None:
         ),
         metavar="<minutes>",
     )
+    parser.add_argument(
+        "--channel-update-retries",
+        type=int,
+        dest="notify_retries",
+        default=3,
+        help="How many times you want to retry posting to Slack",
+        metavar="<number>",
+    )
+    parser.add_argument(
+        "--channel-update-timeout",
+        type=float,
+        dest="notify_timeout",
+        default=30.0,
+        help="Connection timeout when posting to Slack",
+        metavar="<seconds>",
+    )
 
     args = parser.parse_args()
 
@@ -62,6 +83,8 @@ async def _main() -> None:
     channel = cast(str, args.channel)
     repo = cast(str, args.repo)
     timeout = cast(int, args.timeout) * 60
+    notify_retries = cast(int, args.notify_retries)
+    notify_timeout = cast(float, args.notify_timeout)
 
     if "SLACK_TOKEN" not in os.environ:
         sys.exit(red("Please set the $SLACK_TOKEN environment variable"))
@@ -102,22 +125,35 @@ async def _main() -> None:
                 "footer": f"{num_successful_checks}/{num_checks} checks have succeeded",
             }
 
-        response = await post_message(
-            channel=channel,
-            ts=message_ts,
-            icon_emoji=":package:",
-            attachments=[
-                {
-                    "text": status.message,
-                    "author_name": status.author.login,
-                    "author_icon": status.author.avatar_url,
-                    "footer": f"Commit: <{status.url}|`{status.sha[:7]}`>",
-                    "color": commit_color,  # type: ignore
-                },
-                *attachments,
-                summary,
-            ],
-        )
+        response = None
+
+        # Attempt to post notification. If post fails retry provided number of times.
+        for attempt in range(notify_retries):
+            try:
+                response = await post_message(
+                    channel=channel,
+                    ts=message_ts,
+                    icon_emoji=":package:",
+                    attachments=[
+                        {
+                            "text": status.message,
+                            "author_name": status.author.login,
+                            "author_icon": status.author.avatar_url,
+                            "footer": f"Commit: <{status.url}|`{status.sha[:7]}`>",
+                            "color": commit_color,  # type: ignore
+                        },
+                        *attachments,
+                        summary,
+                    ],
+                    timeout=notify_timeout,
+                )
+                break
+            except TimeoutException:
+                if attempt + 1 >= notify_retries:
+                    logger.exception("Failed to notify slack channel")
+                    raise
+
+                logger.error("Unable to post message to slack channel, retrying...")
 
         data = response.json()
         message_ts = data["ts"]
