@@ -7,8 +7,6 @@ from .github import CommitStatus, GithubClient
 async def status_updates(
     *, repo: str, commit: str, poll_interval: int = 1, timeout: int
 ) -> AsyncIterable[CommitStatus]:
-    """
-    """
 
     loop = asyncio.get_running_loop()
     deadline = loop.time() + timeout

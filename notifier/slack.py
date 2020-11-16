@@ -42,6 +42,6 @@ async def post_message(
     }
 
     async with httpx.AsyncClient(
-        auth=SlackAuth(token=os.environ["SLACK_TOKEN"]), timeout=timeout,
+        auth=SlackAuth(token=os.environ["SLACK_TOKEN"]), timeout=timeout
     ) as client:
         return await client.post(f"https://slack.com{path}", json=payload)

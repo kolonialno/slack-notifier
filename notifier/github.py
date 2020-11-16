@@ -79,7 +79,7 @@ class GithubClient:
 
         # Fetch data from the three API endpoints in parallel
         commit_data, check_runs_data, status_data = await asyncio.gather(
-            self._get(url=base_url, response_type=CommitPayload,),
+            self._get(url=base_url, response_type=CommitPayload),
             self._get(
                 url=f"{base_url}/check-runs",
                 headers={"Accept": "application/vnd.github.antiope-preview+json"},
