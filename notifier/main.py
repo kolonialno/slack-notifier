@@ -148,12 +148,7 @@ async def _main() -> None:
                     timeout=notify_timeout,
                 )
                 break
-            except (
-                httpx.ConnectTimeout,
-                httpx.PoolTimeout,
-                httpx.ReadTimeout,
-                httpx.WriteTimeout,
-            ):
+            except httpx.HTTPError:
                 if attempt == notify_retries:
                     logger.error(
                         "%s attempts timed out. Unable to post message to slack channel",
@@ -181,20 +176,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-#    pending_statues: List[MessageAttachment] = [
-#        {"text": "❌ *flake8*", "color": "danger"},
-#        {
-#            "text": "⏳ *Some checks are pending*",
-#            "color": "warning",
-#            "footer": "1/14 checks have succeeded",
-#        },
-#    ]
-#
-#    success_statues: List[MessageAttachment] = [
-#        {
-#            "text": "✅ *All checks passed*",
-#            "color": "good",
-#            "footer": "14/14 checks have succeeded",
-#        },
-#    ]
