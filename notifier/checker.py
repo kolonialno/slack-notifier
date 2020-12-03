@@ -2,7 +2,7 @@ import asyncio
 from typing import AsyncIterable
 
 import httpx
-import loggging
+import logging
 from .github import CommitStatus, GithubClient
 
 logger = logging.getLogger(__name__)
