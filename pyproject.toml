@@ -14,7 +14,7 @@ httpx = "0.17.1"
 dacite = "^1.6.0"
 
 [tool.poetry.dev-dependencies]
-flake8 = "^3.9.1"
+flake8 = "^3.9.2"
 black = "21.5b2"
 isort = "^5.8.0"
 mypy = "0.812"
