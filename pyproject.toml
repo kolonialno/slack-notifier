@@ -17,7 +17,7 @@ dacite = "^1.6.0"
 flake8 = "^5.0.4"
 black = "22.10.0"
 isort = "^5.10.1"
-mypy = "0.982"
+mypy = "0.990"
 flake8-bugbear = "^22.10.27"
 
 [tool.isort]
