@@ -15,7 +15,7 @@ dacite = "^1.6.0"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^5.0.4"
-black = "22.10.0"
+black = "23.1.0"
 isort = "^5.10.1"
 mypy = "0.990"
 flake8-bugbear = "^22.10.27"
